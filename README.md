@@ -1,7 +1,7 @@
 # Projeto Healthchain
- Healthchain é um projeto desenvolvido para a matéria de Blockchain oferecida pelo professor Dr. Arlindo Flávio da Conceição no primeiro semestre de 2024 na UNIVERSIDADE FEDERAL DE SÃO PAULO (UNIFESP) - INSTITUTO DE CIÊNCIA E TECNOLOGIA (ICT).
+ Healthchain é um projeto desenvolvido para a disciplina de Blockchain oferecida pelo professor Dr. Arlindo Flávio da Conceição no primeiro semestre de 2024 na UNIVERSIDADE FEDERAL DE SÃO PAULO (UNIFESP) - INSTITUTO DE CIÊNCIA E TECNOLOGIA (ICT).
 
- O projeto consiste no desenvolvimento de um contrato inteligente e de seu deploy em uma rede de testes. A rede de testes em questão simula a rede Ethereum.
+ O projeto consiste no desenvolvimento de um contrato inteligente e de seu deploy em uma rede de testes. A rede de testes em questão simula a mainNet Ethereum.
  
 ##  BMC (Business Model Canvas)
 
@@ -45,7 +45,7 @@
 - Node v16.13.1
 - Web3.js v1.10.0
 
-___OBS:___ O Truffle, além de ser um tecnologia que não é mais atualizada, ela tambémm não tem suporte para máquinas Windows, sendo necessário rodar o projeto em Linux ou utilizando o WSL (Windows Subsystem for Linux).
+___OBS:___ O Truffle, além de ser um tecnologia que não é mais atualizada, também não tem suporte para máquinas com Sistemas Operacionais Windows, sendo necessário rodar o projeto em Linux ou utilizando o WSL (Windows Subsystem for Linux).
 
 ## Instalação e Execução
 
