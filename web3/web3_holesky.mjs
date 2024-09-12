@@ -1,19 +1,26 @@
 import Web3 from 'web3';
-import fs from 'fs';
+import fs, { read } from 'fs';
 import path from 'path';
 import readlineSync from 'readline-sync';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { Console } from 'console';
 
 // Configuração para obter o diretório atual
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const args = process.argv.slice(2);
+
 // Configuração da conexão com o nó Ethereum
-const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
+const web3 = new Web3(Web3.givenProvider || 'https://eth-holesky.g.alchemy.com/v2/wkboEYORoNasSxYtby8hSihEei6XRkun');
 
 // Endereço do contrato implantado (substitua pelo seu endereço real)
-const contractAddress = '0xDc3d3ceE56B8C334808529529303FCc361232173';
+if (args.length === 0) {
+    console.error('Endereço do contrato não fornecido.');
+    process.exit(1);
+}
+const contractAddress = args[0];
 
 // Leitura do ABI do contrato
 const contractABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'build/contracts/Healthchain.json'), 'utf8')).abi;
@@ -22,36 +29,77 @@ const contractABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'build/co
 const contract = new web3.eth.Contract(contractABI, contractAddress);
 
 let Adress_atual = '';
+let userPrivateKey = '';
+let loggedIn = false;
+
+async function sendTransaction(method, options = {}) {
+    const tx = {
+        from: Adress_atual,
+        to: contractAddress,
+        data: method.encodeABI(),
+        gas: await method.estimateGas({ from: Adress_atual, ...options }),
+        gasPrice: await web3.eth.getGasPrice()
+    };
+
+    const signedTX = await web3.eth.accounts.signTransaction(tx, userPrivateKey);
+    const receipt = await web3.eth.sendSignedTransaction(signedTX.rawTransaction);
+
+    return receipt;
+}
+
+async function trocarConta() {
+    console.log("HealthChain");
+    console.log("1) Fazer LogIn");
+    console.log("2) Sair");
+    const choice = readlineSync.questionInt("\nEscolha uma opção: ");
+    switch (choice) {
+        case 1:
+            Adress_atual = readlineSync.question("Endereço da carteira: ");
+            userPrivateKey = readlineSync.question("Chave privada: ");
+            loggedIn = true;  // Define que o usuário está logado
+            console.log(`Logado com sucesso na conta: ${Adress_atual}`);
+            break;
+        case 2:
+            console.log("Saindo...");
+            process.exit(0);  // Encerra o programa
+            break;
+        default:
+            console.log("Opção Inválida");
+            break;
+    }
+}
 
 async function main() {
+    if (!loggedIn) {
+        await trocarConta();
+    }
+
     const accounts = await web3.eth.getAccounts();
 
     // Função para escolher uma conta
-    function escolherConta(string, accounts) {
+    function escolherConta(promptText, accounts) {
         console.log('Contas disponíveis:');
         accounts.forEach((account, index) => {
             console.log(`${index + 1}: ${account}`);
         });
-        const choice = readlineSync.questionInt(string);
+        const choice = readlineSync.questionInt(promptText);
         return accounts[choice - 1];
     }
 
     // Função para cadastrar uma nova instituição de saúde
     async function cadastrarInstituicao() {
         try {
-            // const instituicaoAddress = escolherConta("escolha o endereço do hospital: ",accounts);
             const nomeInstituicao = readlineSync.question('Digite o nome da instituição: ');
-
             const inicio = performance.now();
-            
-            await contract.methods.cadastrarInstituicao(Adress_atual, nomeInstituicao)
-                .send({ from: Adress_atual });
+
+            const method = contract.methods.cadastrarInstituicao(Adress_atual, nomeInstituicao);
+            const receipt = await sendTransaction(method);
+
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
 
             console.log(`Instituição ${nomeInstituicao} cadastrada com sucesso!`);
-
         } catch (error) {
             console.error('Erro ao cadastrar instituição:', error);
         }
@@ -59,73 +107,55 @@ async function main() {
 
     async function getInstituicao() {
         try {
-            const instituicaoAddress = escolherConta('Escolha o endereço da instituição:', accounts);
-            
+            const instituicaoAddress = readlineSync.question('Escreva o endereço da instituição: ');
+
             const inicio = performance.now();
             const instituicao = await contract.methods.getInstituicao(instituicaoAddress).call();
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-            
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
             console.log(`Endereço da Instituição: ${instituicao[0]}`);
-            console.log(`Saldo: ${web3.utils.fromWei(instituicao[1], 'ether')} ETH`);
-            console.log(`Nome da Instituição: ${instituicao[2]}`);
-            
+            console.log(`Nome da Instituição: ${instituicao[1]}`);
         } catch (error) {
             console.error('Erro ao consultar instituição:', error);
-            console.error('Detalhes do erro:', error);  // Exibe detalhes adicionais do erro
         }
     }
 
-
-
     async function cadastrarCliente() {
         try {
-            // const instituicaoAddress = escolherConta('Escolha o endereço da instituição:', accounts);
-            const clienteAddress = escolherConta('Escolha o endereço do cliente:', accounts);
-            const comorbidade = readlineSync.question('Digite a comorbidade: ');
-            const alergia = readlineSync.question('Digite a alergia: ');
-            const tipoSanguineo = readlineSync.question('Digite o tipo sanguíneo: ');
-            const restricao = readlineSync.question('Digite a restricao: ');       
-    
-            // Faz a chamada para a função `cadastrarCliente` no contrato
+            const clienteAddress = readlineSync.question('Digite o endereço do cliente: ');
+
             const inicio = performance.now();
-            
-            await contract.methods.cadastrarCliente(comorbidade, alergia, tipoSanguineo, restricao, clienteAddress)
-                .send({
-                    from: Adress_atual,
-                    value: web3.utils.toWei('0.0001', 'ether'),  // Enviar 0.0001 ether
-                    gas: 3000000  // Ajustar o valor de gas se necessário
-                });
+
+            const method = contract.methods.cadastrarCliente( clienteAddress,'-------', '-------', '-------', '-------');
+            const receipt = await sendTransaction(method);
+
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-    
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
             console.log(`Cliente ${clienteAddress} cadastrado com sucesso!`);
         } catch (error) {
             console.error('Erro ao cadastrar cliente:', error.message);
         }
     }
-    
-    
-    
+
     async function getCliente() {
         try {
-            const clienteAddress = escolherConta("Escolha o endereço do cliente: ", accounts);
-            
+            const clienteAddress = readlineSync.question('Escreva o endereço do cliente: ');
+    
             const inicio = performance.now();
-            // Usar .call() ao invés de .send() para funções que retornam valores
             const cliente = await contract.methods.getCliente(clienteAddress).call({ from: Adress_atual });
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-    
+            const tempoDecorrido = (fim - inicio) / 1000; // Converte para segundos
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+            console.log("")
             console.log('Dados do Cliente:');
             console.log(`Comorbidades: ${cliente[0]}`);
             console.log(`Alergias: ${cliente[1]}`);
             console.log(`Tipo Sanguíneo: ${cliente[2]}`);
-            console.log(`especificidade: ${cliente[3]}`);
-
+            console.log(`Restrição: ${cliente[3]}`);
         } catch (error) {
             console.error('Erro ao consultar cliente:', error);
         }
@@ -138,95 +168,96 @@ async function main() {
             const alergia = readlineSync.question('Digite a alergia: ');
             const tipoSanguineo = readlineSync.question('Digite o tipo sanguíneo: ');
             const restricao = readlineSync.question('Digite a restricao: ');
-    
-            // const Adress_atual = escolherConta('Escolha o endereço do cliente:', accounts);
-            
+
             const inicio = performance.now();
-            await contract.methods.editarCliente(comorbidade, alergia, tipoSanguineo, restricao)
-                .send({ from: Adress_atual });
+
+            const method = contract.methods.editarCliente(comorbidade, alergia, tipoSanguineo, restricao);
+            const receipt = await sendTransaction(method);
+
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-    
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
             console.log('Cliente editado com sucesso!');
         } catch (error) {
             console.error('Erro ao editar cliente:', error.message);
-            console.error('Detalhes do erro:', error);
         }
     }
-    
-    
+
     async function excluirCliente() {
         try {
-            const clienteAddress = escolherConta('escolha o endereço do cliente: ',accounts);
-        const inicio = performance.now();
-        await contract.methods.excluirCliente(clienteAddress)
-            .send({ from: Adress_atual });
-        const fim = performance.now();
-        const tempoDecorrido = fim - inicio;
-        console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-        console.log('Cliente excluido com sucesso!');
-        } catch (error) { console.log(error) }
+            const clienteAddress = readlineSync.question('Digite o endereço do cliente: ');
+
+            const inicio = performance.now();
+
+            const method = contract.methods.excluirCliente(clienteAddress);
+            const receipt = await sendTransaction(method);
+
+            const fim = performance.now();
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
+            console.log('Cliente excluído com sucesso!');
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     async function excluirSocorrista() {
         try {
-            const socorristaAddress = escolherConta('escolha o endereço do socorrista: ',accounts);
+            const socorristaAddress = readlineSync.question('Digite o endereço do socorrista: ');
+
             const inicio = performance.now();
-            await contract.methods.excluirSocorrista(socorristaAddress)
-            .send({ from: Adress_atual });
+
+            const method = contract.methods.excluirSocorrista(socorristaAddress);
+            const receipt = await sendTransaction(method);
+
             const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-            console.log('Socorrista excluido com sucesso!');
-        }
-        catch(error){
-            console.error('erro exclui socorrista: ',error)
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
+            console.log('Socorrista excluído com sucesso!');
+        } catch (error) {
+            console.error('Erro ao excluir socorrista:', error);
         }
     }
 
-
-  
     async function cadastrarSocorrista() {
         try {
-            // Escolha a conta da instituição
-            
-            const socorristaAddress = escolherConta('escolha o endereço do socorrista: ' ,accounts);
-
+            const socorristaAddress = readlineSync.question('Digite o endereço do socorrista: ');
             const crm = readlineSync.question('Digite o CRM do socorrista: ');
-    
-            // console.log('Endereço do socorrista:', socorristaAddress);
-            console.log('CRM do socorrista:', crm);
-    
-            await contract.methods.cadastrarSocorrista(socorristaAddress, crm)
-                .send({ from: Adress_atual , gas: 3000000 }); // A instituição deve ser a que envia a transação
-    
-            console.log(`Socorrista ${crm} cadastrado com sucesso!`);
+
+            const inicio = performance.now();
+
+            const method = contract.methods.cadastrarSocorrista(socorristaAddress, crm);
+            const receipt = await sendTransaction(method);
+
+            const fim = performance.now();
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
+            console.log(`Socorrista cadastrado com sucesso!`);
         } catch (error) {
             console.error('Erro ao cadastrar socorrista:', error);
         }
     }
 
-    async function getSocorrista(){
-        try{  
-        const socorristaAdress = escolherConta('esolha a conta do socorrista:', accounts);
-        const inicio = performance.now();
-        const socorrista = await contract.methods.getSocorrista(socorristaAdress)
-            .call({from: Adress_atual, gas: 3000000});
-        const fim = performance.now();
-        const tempoDecorrido = fim - inicio;
-        console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-        console.log(socorrista[2]);
-        }catch(error){
-            console.error('erro getsocorrista: ',error)
+    async function getSocorrista() {
+        try {
+            const socorristaAddress = readlineSync.question('Digite o endereço do socorrista: ');
+
+            const inicio = performance.now();
+            const socorrista = await contract.methods.getSocorrista(socorristaAddress).call({ from: Adress_atual });
+            const fim = performance.now();
+            const tempoDecorrido = (fim - inicio)/1000;
+            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} s`);
+
+            console.log(`CRM do Socorrista: ${socorrista[1]}`);
+        } catch (error) {
+            console.error('Erro ao consultar socorrista:', error);
         }
     }
 
-    async function trocarConta() {
-        Adress_atual = escolherConta('Escolha a conta: ', accounts);
-        console.log(`Conta atual: ${Adress_atual}`);
-    }
-    
     // Função interativa
     async function interactive() {
         while (true) {
@@ -241,7 +272,8 @@ async function main() {
                 8) Consultar socorrista
                 9) Excluir socorrista
                 10) Trocar conta
-                11) Sair`);
+                11) Sair
+                `);
 
             const choice = readlineSync.questionInt('Escolha uma opção: ');
 
@@ -292,5 +324,3 @@ async function main() {
 main().catch((error) => {
     console.error('Erro na execução do código principal:', error);
 });
-
-

@@ -113,12 +113,13 @@ contract Healthchain {
     }
 
     // Função para obter informações de um cliente - Apenas socorristas podem chamar esta função
-    function getCliente(address _cliente) public returns (
+function getCliente(address _cliente) public returns (
     string memory,
     string memory,
     string memory,
     string memory
 ) {
+    // Requisitos de acesso e verificações
     require(
         socorristas[msg.sender].socorrista != address(0) || 
         instituicoes[msg.sender].instituicaoSaude != address(0), 
@@ -126,8 +127,10 @@ contract Healthchain {
     );
     require(clientes[_cliente].cliente != address(0), "Cliente nao encontrado");
 
+    // Emitindo evento de consulta ao cliente
     emit ClienteConsultado(msg.sender, _cliente);
 
+    // Retornando informações do cliente
     Cliente memory cliente = clientes[_cliente];
     return (
         cliente.comorbidades,
@@ -136,6 +139,7 @@ contract Healthchain {
         cliente.restricao
     );
 }
+
 
 
     // Função para cadastrar um novo socorrista
