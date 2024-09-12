@@ -16,7 +16,7 @@ const web3 = new Web3(Web3.givenProvider || 'http://localhost:8545');
 const contractAddress = '0xB30132Fb94505b9a71dA5aCBFbA9AD636D83d5ad';
 
 // Leitura do ABI do contrato
-const contractABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'build/contracts/Healthchain.json'), 'utf8')).abi;
+const contractABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../build/contracts/Healthchain.json'), 'utf8')).abi;
 
 // Criação da instância do contrato
 const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -67,20 +67,21 @@ async function main() {
             console.log("")
             const instituicaoAddress = escolherConta('Escolha o endereço da instituição:', accounts);
 
-            console.log("")
+            console.log("AAAAAAAAA")
 
             
-            const inicio = performance.now();
+            // const inicio = performance.now();
             const instituicao = await contract.methods.getInstituicao(instituicaoAddress).call();
-            const fim = performance.now();
-            const tempoDecorrido = fim - inicio;
-            console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
-            console.log("")
+
+            // const fim = performance.now();
+            // const tempoDecorrido = fim - inicio;
+            // console.log(`Tempo de execução: ${tempoDecorrido.toFixed(2)} ms`);
+            // console.log("")
 
             
-            console.log(`Endereço da Instituição: ${instituicao[0]}`);
+            // console.log(`Endereço da Instituição: ${instituicao[0]}`);
             // console.log(`Saldo: ${web3.utils.fromWei(instituicao[1], 'ether')} ETH`);
-            console.log(`Nome da Instituição: ${instituicao[1]}`);
+            // console.log(`Nome da Instituição: ${instituicao[1]}`);
             
         } catch (error) {
             console.error('Erro ao consultar instituição:', error);
@@ -92,14 +93,9 @@ async function main() {
 
     async function cadastrarCliente() {
         try {
-            // const instituicaoAddress = escolherConta('Escolha o endereço da instituição:', accounts);
             console.log("")
             const clienteAddress = escolherConta('Escolha o endereço do cliente:', accounts);
-            console.log("")
-            // const comorbidade = readlineSync.question('Digite a comorbidade: ');
-            // const alergia = readlineSync.question('Digite a alergia: ');
-            // const tipoSanguineo = readlineSync.question('Digite o tipo sanguíneo: ');
-            // const restricao = readlineSync.question('Digite a restricao: ');       
+            console.log("")   
     
             // Faz a chamada para a função `cadastrarCliente` no contrato
             const inicio = performance.now();
@@ -219,8 +215,8 @@ async function main() {
             const socorristaAddress = escolherConta('escolha o endereço do socorrista: ' ,accounts);
             console.log("")
             
-            // const crm = readlineSync.question('Digite o CRM do socorrista: ');
-            // console.log("")
+            const crm = readlineSync.question('Digite o CRM do socorrista: ');
+            console.log("")
     
             // console.log('Endereço do socorrista:', socorristaAddress);
             console.log('CRM do socorrista:', crm);
