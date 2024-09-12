@@ -1,8 +1,8 @@
 # Projeto Healthchain
  Healthchain é um projeto desenvolvido para a matéria de Blockchain oferecida pelo professor Dr. Arlindo Flávio da Conceição no primeiro semestre de 2024 na UNIVERSIDADE FEDERAL DE SÃO PAULO (UNIFESP) - INSTITUTO DE CIÊNCIA E TECNOLOGIA (ICT).
 
- O projeto consiste no desenvolvimento de um contrato inteligente, do que foi realizado o seu deploy dentro de uma rede de testes, que por sua vez simula a rede Ethereum, ou seja, trata-se de um DAPP (Decentralized Application).
-
+ O projeto consiste no desenvolvimento de um contrato inteligente e de seu deploy em uma rede de testes. A rede de testes em questão simula a rede Ethereum.
+ 
 ##  BMC (Business Model Canvas)
 
 <p align="center">
