@@ -6,7 +6,7 @@
 ##  BMC (Business Model Canvas)
 
 <p align="center">
-  <img src="https://github.com/DanFeMartins/Blockchain-/blob/master/Sustainable_Business_Model_Canvas-1.pdf" alt="BMC">
+  <img src="https://github.com/DanFeMartins/Blockchain-/blob/master/BMC.png" alt="BMC">
 </p>
 
 
